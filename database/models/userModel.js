@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const Schema = mongoose.Schema;
-const { v4: uuidv4 } = require('uuid');
 
 const userSchema = new Schema({
     firstName: String,
@@ -51,11 +50,6 @@ userSchema.methods.setPassword = function(pass) {
     const hash = bcrypt.hashSync(pass, salt);
 
     this.password = hash;
-};
-
-userSchema.methods.setToken = function(token) {
-    this.accessToken = token;
-    this.refreshToken = uuidv4();
 };
 
 userSchema.methods.isValidPassword = function(password) {

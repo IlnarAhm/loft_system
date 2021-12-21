@@ -1,29 +1,57 @@
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+const passportJWT = require('passport-jwt');
+
 const User = require('../database/models/userModel');
 
 passport.use(new LocalStrategy(
     async function(username, password, done) {
-        const user = await User.findOne({username});
+        try {
+            const user = await User.findOne({username});
 
-        if (user && user.isValidPassword(password)) {
-            return done(null, user);
-        } else {
-            return done(null, false);
+            if (!user) {
+                return done(null, false)
+            }
+
+            if (!user.isValidPassword(password)) {
+                return done(null, false)
+            }
+
+            return done(null, user)
+        } catch (err) {
+            done(err);
         }
     }
 ));
 
 
-passport.serializeUser(function(user, done) {
-    done(null, user.id);
-});
+// JWT Strategy
+const params = {
+    secretOrKey: "secretKey",
+    jwtFromRequest: function (req) {
+        let token = null;
 
-passport.deserializeUser(async function(id, done) {
-    try {
-        const user = await db.getUserById(id);
-        done(null, user);
-    } catch (err) {
-        done(err, false);
-    }
-});
+        if (req && req.headers) {
+            token = req.headers['authorization'];
+        }
+
+        return token;
+    },
+};
+
+passport.use(
+    new passportJWT.Strategy(params, async function (payload, done) {
+        try {
+            const user = await User.findById({_id: payload.user.id});
+
+            if (!user) {
+                return done(new Error('User not found'));
+            }
+
+            return done(null, user);
+
+        } catch (err) {
+            done(err);
+        }
+    })
+);

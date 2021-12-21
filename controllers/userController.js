@@ -1,7 +1,7 @@
 const passport = require('passport');
-const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
+const tokens = require('../config/tokens');
 const formidable = require("formidable");
 
 const User = require('../database/models/userModel');
@@ -12,7 +12,7 @@ module.exports.registration = async function(req, res) {
     User.findOne({ username })
         .then((user) => {
             if(user) {
-                return res.status(500).json({ error: {message: 'Пользователь с таким логином уже существует' }});
+                return res.status(49).json({ message: 'Пользователь с таким логином уже существует' });
             } else {
                 const newUser = new User({ firstName, middleName, surName, username });
 
@@ -26,55 +26,40 @@ module.exports.registration = async function(req, res) {
 };
 
 module.exports.login = async function(req, res, next) {
-    passport.authenticate("local", async function(err, user, info) {
-        if (err) {
-            return next(err);
-        }
-        if (!user) {
-            return res.redirect("/");
-        }
-        req.logIn(user, async function(err) {
+    passport.authenticate(
+        'local',
+        { session: false },
+        async (err, user, info) => {
             if (err) {
                 return next(err);
             }
+            if (!user) {
+                return res.status(409).json({ message: 'Не правильно введен логин или пароль' });
+            }
+            if (user) {
+                const token = await tokens.createTokens(user);
 
-            const token = uuidv4();
-            user.setToken(token);
-
-            await User.findOneAndUpdate({ id: user.id }, user, { new: true });
-
-            res.cookie("accessToken", token, {
-                maxAge: 7 * 60 * 60 * 1000,
-                path: "/",
-                httpOnly: false
-            });
-
-            res.json(user);
-        });
+                res.json({
+                    ...user,
+                    ...token,
+                });
+            }
     })(req, res, next);
 };
 
 
 module.exports.refreshToken = async function(req, res) {
-    try {
-        const accessToken = req.cookies;
+    const refreshToken = req.headers['authorization'];
 
-        const user = await User.findOne(accessToken);
-
-        res.set('authorization', user.refreshToken);
-        res.send();
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: err.message });
-    }
+    const data = await tokens.refreshTokens(refreshToken);
+    res.json({ ...data });
 };
 
 module.exports.profile = async function(req, res) {
-    // if(req.isAuthenticated()) {
     try {
-        const user = await User.findOne({ username: req.body.username });
+        const user = req.user;
 
-        return res.json(user);
+        res.json(user);
     } catch(err) {
         console.error(err);
         res.status(400).json({error: err.message});
@@ -88,7 +73,7 @@ module.exports.updateProfile = async function(req, res) {
         const upload = path.normalize('uploads');
 
         form.parse(req, async function(err, fields, files) {
-            if (err) return res.status(400).json({ error: "Возникла ошибка" });
+            if (err) return res.status(409).json({ message: "Возникла ошибка" });
             const { firstName, middleName, surName, oldPassword, newPassword } = fields;
             const user = await User.findOne(accessToken);
 
@@ -103,7 +88,7 @@ module.exports.updateProfile = async function(req, res) {
 
                 fs.rename(files.avatar.filepath, fileName, async function (err) {
                     if (err) {
-                        return res.status(400).json({ error: err.message });
+                        return res.status(409).json({ message: err.message });
                     }
                 });
             }
