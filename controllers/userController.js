@@ -68,34 +68,35 @@ module.exports.profile = async function(req, res) {
 
 module.exports.updateProfile = async function(req, res) {
     try {
-        const accessToken = req.cookies;
+        const refreshToken = req.headers['authorization'];
         const form = new formidable.IncomingForm();
         const upload = path.normalize('uploads');
 
         form.parse(req, async function(err, fields, files) {
             if (err) return res.status(409).json({ message: "Возникла ошибка" });
+
             const { firstName, middleName, surName, oldPassword, newPassword } = fields;
-            const user = await User.findOne(accessToken);
+
+            // const user = await User.findOne(accessToken);
+            const user = await tokens.getUserByToken(refreshToken);
 
             if(newPassword !== '' && user.isValidPassword(oldPassword)) {
                 await user.setPassword(newPassword);
             }
 
-            let fileName = '';
+            let fileName = user.image;
 
             if(Object.keys(files).length !== 0) {
-                fileName = path.join(upload, files.avatar.originalFilename);
+                uploadFilePath = path.join(upload, files.avatar.originalFilename);
+                fileName = path.join('/', upload, files.avatar.originalFilename);
 
-                fs.rename(files.avatar.filepath, fileName, async function (err) {
-                    if (err) {
-                        return res.status(409).json({ message: err.message });
-                    }
-                });
+                await fs.renameSync(files.avatar.filepath, uploadFilePath);
             }
 
-            const updatedUser = await User.findOneAndUpdate({ id: user.id }, { firstName, middleName, surName, image: '/' + fileName }, { new: true });
+            const updatedUser = await User.findOneAndUpdate({ _id: user.id }, { firstName, middleName, surName, image: fileName }, {new: true});
 
-            return res.json(updatedUser);
+            console.log(updatedUser);
+            res.json(updatedUser);
         });
     } catch (err) {
         return res.status(400).json({ error: err.message });
