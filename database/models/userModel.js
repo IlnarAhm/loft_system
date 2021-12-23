@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
+    id: String,
     firstName: String,
     image: { type: String, default: '' },
     middleName: String,
@@ -55,6 +56,18 @@ userSchema.methods.setPassword = function(pass) {
 userSchema.methods.isValidPassword = function(password) {
     return bcrypt.compareSync(password, this.password);
 };
+
+userSchema.methods.serialize = function() {
+    return {
+        firstName: this.firstName,
+        id: this.id,
+        image: this.image,
+        middleName: this.middleName,
+        permission: this.permission,
+        surName: this.surName,
+        username: this.username,
+    }
+}
 
 const User = mongoose.model("User", userSchema);
 

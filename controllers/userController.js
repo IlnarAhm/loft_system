@@ -1,4 +1,5 @@
 const passport = require('passport');
+const { uuid } = require('uuidv4');
 const path = require('path');
 const fs = require('fs');
 const tokens = require('../config/tokens');
@@ -14,7 +15,7 @@ module.exports.registration = async function(req, res) {
             if(user) {
                 return res.status(49).json({ message: 'Пользователь с таким логином уже существует' });
             } else {
-                const newUser = new User({ firstName, middleName, surName, username });
+                const newUser = new User({ id: uuid(), firstName, middleName, surName, username });
 
                 newUser.setPassword(password);
                 newUser.save()
@@ -40,7 +41,7 @@ module.exports.login = async function(req, res, next) {
                 const token = await tokens.createTokens(user);
 
                 res.json({
-                    ...user,
+                    ...user.serialize(),
                     ...token,
                 });
             }
@@ -101,4 +102,22 @@ module.exports.updateProfile = async function(req, res) {
     } catch (err) {
         return res.status(400).json({ error: err.message });
     }
+};
+
+module.exports.deleteUser = async function(req, res) {
+    const deletedUser = await User.findOneAndDelete({ _id: req.params.id });
+
+    res.json(deletedUser);
+};
+
+module.exports.getAll = async function(req, res) {
+    const users = await User.find({});
+
+    res.json(users);
+};
+
+module.exports.permission = async function(req, res) {
+    const users = await User.findOneAndUpdate({id: req.params.id}, req.body);
+
+    // res.json(users);
 };
