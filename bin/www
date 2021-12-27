@@ -7,7 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('loft-system-express:server');
 const server = require('../socket');
-
+const {TextDecoder, TextEncoder} = require("util");
 /**
  * Get port from environment and store in Express.
  */
