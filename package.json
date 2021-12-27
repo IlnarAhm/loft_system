@@ -1,6 +1,9 @@
 {
   "name": "loft-system-express",
   "version": "0.0.0",
+  "engines": {
+    "node": "10.x"
+  },
   "private": true,
   "scripts": {
     "start": "cross-env NODE_ENV=production node ./bin/www",
