@@ -7,7 +7,7 @@ const News = require('../database/models/newsModel');
 module.exports.getAllNews = async function(req, res) {
     const news = await News.find({});
 
-    res.json(news);
+    res.status(200).json(news);
 };
 
 module.exports.addNews = async function(req, res) {
@@ -34,7 +34,7 @@ module.exports.addNews = async function(req, res) {
 
     const news = await News.find({});
 
-    res.json(news);
+    res.status(201).json(news);
 };
 
 module.exports.updateNews = async function(req, res) {
@@ -44,7 +44,7 @@ module.exports.updateNews = async function(req, res) {
 
     const news = await News.find({});
 
-    res.json(news);
+    res.status(200).json(news);
 };
 
 module.exports.deleteNews = async function(req, res) {
@@ -52,5 +52,5 @@ module.exports.deleteNews = async function(req, res) {
 
     const news = await News.find({});
 
-    res.json(news);
+    res.status(200).json(news);
 };
